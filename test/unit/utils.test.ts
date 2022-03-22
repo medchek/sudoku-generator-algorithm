@@ -8,7 +8,7 @@ import {
   hasNaN,
   removeArrayDuplicates,
   removeNumberOccurrence,
-} from "./../../utils/utils";
+} from "../../src/utils/utils";
 
 test("removeNumberOccurrence should return the array without the number to be removed", () => {
   const array: number[] = [154, 1579, 368, 123];

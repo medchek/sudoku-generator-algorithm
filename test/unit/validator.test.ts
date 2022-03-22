@@ -1,4 +1,4 @@
-import { validateSudokuGrid as validateSudokuGrid } from "./../../utils/validator";
+import { validateSudokuGrid as validateSudokuGrid } from "../../src/utils/validator";
 test("validateGrid should return true if the gird is a valid sudoku grid", () => {
   const validSudokuGrid = [
     [3, 1, 9, 4, 7, 6, 5, 8, 2],
