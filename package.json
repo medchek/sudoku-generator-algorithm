@@ -2,10 +2,11 @@
   "name": "sudoku-generator",
   "version": "1.0.0",
   "description": "",
-  "main": "./src/index.ts",
+  "main": "./src/core/Sudoku.ts",
   "scripts": {
-    "test": "npx jest",
-    "start": "npx ts-node-dev --respawn --rs --transpile-only ./src/index.ts"
+    "dev": "npx ts-node-dev --respawn --rs --transpile-only ./src/index.ts",
+    "build": "npx ncc build ./src/core/Sudoku.ts -o ./build",
+    "test": "npx jest"
   },
   "keywords": [],
   "author": "medchek",
@@ -15,6 +16,7 @@
     "@types/node": "^17.0.21",
     "@typescript-eslint/eslint-plugin": "^5.14.0",
     "@typescript-eslint/parser": "^5.14.0",
+    "@vercel/ncc": "^0.33.3",
     "chalk": "^4.1.2",
     "eslint": "^8.10.0",
     "jest": "^27.5.1",
