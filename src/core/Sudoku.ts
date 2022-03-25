@@ -4,9 +4,7 @@ import {
   removeArrayDuplicates,
   getArrayMinNumberIndex,
   removeNumberOccurrence,
-  arrayHasDuplicates,
   convertObjectKeysToNumbers,
-  doesGridContainZero,
   getLeastOccurredNumberCount,
   hasNaN,
   pickFromNumber,
@@ -14,34 +12,16 @@ import {
   randomNumber,
 } from "./../utils/utils";
 
-import chalk from "chalk";
-
 interface CellCoordinates {
   row: number;
   col: number;
 }
 
-interface SudokuConstructor {
-  debug?: boolean;
-}
-
 export class Sudoku {
-  private _debug = false;
   private _grid: number[][] = [];
-
-  constructor(opt?: SudokuConstructor) {
-    if (opt) {
-      const { debug } = opt;
-      this._debug = debug ?? false;
-    }
-  }
 
   public get grid() {
     return this._grid;
-  }
-
-  public get isDebug() {
-    return this._debug;
   }
 
   /**
@@ -129,8 +109,12 @@ export class Sudoku {
   private _getAllowedInCell({ row, col }: CellCoordinates): number[] {
     return getMissingNumbers(this._getCell({ row, col }));
   }
-
-  private _computedRowSolutionInEachCell(row: number): number[] {
+  /**
+   * Get the possibilites in each cell of the target row
+   * @param row the row index
+   * @returns
+   */
+  private _getRowPossibilitiesInEachCell(row: number): number[] {
     // first row is randomly generated, no need to computed its cell possible solutions
     if (row === 0) throw new Error("Row cannot be 0");
     const rowCellsSolution: number[] = [];
@@ -148,27 +132,9 @@ export class Sudoku {
     const generatedValidRow: { [cachedIndex: string]: number } = {};
 
     for (let i = 0; i < immutablePossibilities.length; i++) {
-      // ** DEBUG --------------------------------------------------------------------------------------------------------
-      this.isDebug && console.log("ITERATION =>", i + 1, "of 9");
-      // ** DEBUG --------------------------------------------------------------------------------------------------------
-
       const ignoreIndexList = convertObjectKeysToNumbers(
         Object.keys(generatedValidRow)
       );
-      // ** DEBUG --------------------------------------------------------------------------------------------------------
-      if (this.isDebug) {
-        console.log(
-          chalk.yellow(
-            "===================START OF ITERATION=========================="
-          )
-        );
-        console.log(`first possibilities => ${possibilities}`);
-
-        console.log(
-          `getting the minimum number while ignoring ${ignoreIndexList}`
-        );
-      }
-      // ** DEBUG --------------------------------------------------------------------------------------------------------
       /** this will be the index of the target cell for which a valid number is to be generated */
       const minNumberIndex = getArrayMinNumberIndex(
         possibilities,
@@ -177,29 +143,6 @@ export class Sudoku {
       // transform it to a string so that it can be manipulated
       const minNumber = possibilities[minNumberIndex];
       // const minNumberStr = minNumber.toString();
-
-      // ** DEBUG --------------------------------------------------------------------------------------------------------
-      if (this.isDebug) {
-        console.log(
-          "Minimum number found is",
-          minNumber,
-          "at index",
-          minNumberIndex
-        );
-      }
-      // ** DEBUG --------------------------------------------------------------------------------------------------------
-
-      // ** DEBUG --------------------------------------------------------------------------------------------------------
-      if (this.isDebug) {
-        console.log(
-          chalk.green(
-            "getting the least present number among numbers in",
-            minNumber,
-            `from possibilities ${possibilities} while ignoring ${ignoreIndexList}`
-          )
-        );
-      }
-      // ** DEBUG --------------------------------------------------------------------------------------------------------
 
       let validCellNumber: number;
       // first three cells are chosen randomly
@@ -213,18 +156,6 @@ export class Sudoku {
           ignoreIndexList
         );
       }
-
-      // ** DEBUG --------------------------------------------------------------------------------------------------------
-      if (this.isDebug) {
-        console.log(
-          chalk.cyan(
-            "GENERATED VALID NUMBER for cell",
-            chalk[validCellNumber === 0 ? "red" : "green"](validCellNumber)
-          )
-        );
-      }
-      // ** DEBUG --------------------------------------------------------------------------------------------------------
-
       generatedValidRow[minNumberIndex] = validCellNumber;
       // before removing the number from the possibilities
       // add the successfully generated number index to the ignore list index so that
@@ -237,33 +168,10 @@ export class Sudoku {
         validCellNumber,
         ignoreIndexList
       );
-
-      // ** DEBUG --------------------------------------------------------------------------------------------------------
-      if (this.isDebug) {
-        console.log(
-          `REPLACING POSSIBILITIES WITH OMITTED NUMBER ${validCellNumber}: ${possibilities}`
-        );
-
-        console.log(
-          chalk.yellow(
-            "====================END OF ITERATION========================="
-          )
-        );
-      }
-      // ** DEBUG --------------------------------------------------------------------------------------------------------
     }
 
-    // ** DEBUG --------------------------------------------------------------------------------------------------------
-    if (this.isDebug) {
-      console.log("VALID GENERATED ROW", generatedValidRow);
-      console.log(
-        "ROW HAS DUPLICATE VALUES ?",
-        arrayHasDuplicates(Object.values(generatedValidRow))
-      );
-    }
     return Object.values(generatedValidRow);
   }
-  // ** DEBUG --------------------------------------------------------------------------------------------------------
 
   /**
    * Generates a valid sudoku grid
@@ -272,39 +180,16 @@ export class Sudoku {
     this._resetGrid();
     console.clear();
 
-    // ** DEBUG --------------------------------------------------------------------------------------------------------
-    if (this.isDebug) {
-      console.log(
-        "--------------------------------------------------- RUNNING GENERATOR ----------------------------------------------------"
-      );
-      console.log(
-        chalk.bgBlue.white(
-          "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
-        )
-      );
-      console.log(
-        chalk.bgBlue.white(
-          "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
-        )
-      );
-    }
-    // ** DEBUG --------------------------------------------------------------------------------------------------------
-
     for (let row = 0; row < 9; row++) {
       if (row === 0) {
         // create the first row which is a randomly shuffled array of number
         // this will serve as the base of the next generations
         const randomlyGeneratedRow = this._generateRandomRow();
-        if (this.isDebug) {
-          console.log("RANDOMLY GENERATED ROW => ", randomlyGeneratedRow);
-        }
         this._grid[row] = randomlyGeneratedRow;
       } else {
         this._grid[row] = [];
 
-        if (this.isDebug) console.log("row = ", row);
-
-        const rowPossibleInEachCell = this._computedRowSolutionInEachCell(row);
+        const rowPossibleInEachCell = this._getRowPossibilitiesInEachCell(row);
         const rowPossibilitiesContainNan = hasNaN(rowPossibleInEachCell);
         // if the row possibilities contain a nan this means that the grid cannot produce a valid row based on the possibilities
         // therefore we need to rollback to the previous row and regenerate a new one
@@ -312,21 +197,6 @@ export class Sudoku {
           // the row at index 1 can never have a NaN therefore, we can safely assume that the rolled back row
           // is never the first one (index 0, which needs a randomly generated row rather than based on possibilities)
           // Reset the previous row
-
-          // ** DEBUG --------------------------------------------------------------------------------------------------------
-          if (this.isDebug) {
-            console.log(
-              chalk.bgRed.white(
-                `POSSIBILITIES [${rowPossibleInEachCell}] CONTAIN NAN, ROLLING BACK`
-              )
-            );
-            console.log(
-              chalk.bgRed.white(
-                "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"
-              )
-            );
-          }
-          // ** DEBUG --------------------------------------------------------------------------------------------------------
 
           // remove both the current empty and the previously generated row (so that it gets regenerated again)
           // before rolling back
@@ -336,12 +206,6 @@ export class Sudoku {
           // once we rollback, reiterate
           continue;
         }
-
-        // ** DEBUG --------------------------------------------------------------------------------------------------------
-        if (this.isDebug) {
-          console.log(`POSSIBILITIES IN ROW ${row}: ${rowPossibleInEachCell}`);
-        }
-        // ** DEBUG --------------------------------------------------------------------------------------------------------
 
         const generatedRow = this._generateValidRow(rowPossibleInEachCell);
 
@@ -355,25 +219,8 @@ export class Sudoku {
         }
 
         this._grid[row] = generatedRow;
-
-        // ** DEBUG --------------------------------------------------------------------------------------------------------
-        if (this.isDebug) {
-          console.log("CURRENT GRID STATE => ");
-          console.table(this._grid);
-
-          console.log(
-            "VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV"
-          );
-        }
-        // ** DEBUG --------------------------------------------------------------------------------------------------------
       }
     }
-
-    // ** DEBUG --------------------------------------------------------------------------------------------------------
-    if (this.isDebug) {
-      console.log("Does grid contain 0 =", doesGridContainZero(this._grid));
-    }
-    // ** DEBUG --------------------------------------------------------------------------------------------------------
 
     // temp
     return this._grid;
