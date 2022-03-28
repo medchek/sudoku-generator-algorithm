@@ -1,11 +1,13 @@
 # Sudoku Generator
 
-This is my attempt at creating an algorithm that generates a valid Soduko grid containing all numbers from 1 to 9 in each row, each column, and each 3x3 square of the grid. Each number is unique and is never repeated in any row/col/square. The algorithm takes about 5ms to 6ms to complete.
+This is my attempt at creating an algorithm that generates a valid Soduko grid containing all numbers from 1 to 9 in each row, each column, and each 3x3 square of the grid. Each number is unique and is never repeated in any row/col/square. The algorithm takes about 4ms to 6ms to complete.
+
+![demo](./.github/demo.webp/)
 
 ## Usage
 
 ```typescript
-import { Sudoku } from "./core/Sudoku";
+import { Sudoku } from "./src/"; // index.ts
 
 const sudoku = new Sudoku();
 const grid = sudoku.generate();
