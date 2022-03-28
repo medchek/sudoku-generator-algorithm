@@ -51,25 +51,17 @@ export const getMissingNumbers = (array: number[]): number[] => {
 
 /**
  * returns the index number of the largest number in the array
- * @param array array containing the numbers
- */
-export const getArrayMaxNumberIndex = (array: (number | null)[]): number => {
-  const maxNumber = Math.max(...(array as number[]));
-  if (maxNumber === 0) return -1;
-  return array.indexOf(maxNumber);
-};
-/**
- * returns the index number of the largest number in the array
  * @param numbersArray array containing the numbers
  * @param ignoreIndexList an array of indices used to ignore any value in the numbersArray which index is present in ignoreIndexList
  */
 export const getArrayMinNumberIndex = (
-  array: number[],
+  array: number[][],
   ignoreIndexList: number[]
 ): number => {
-  const allowed = array.map((n, i) =>
-    ignoreIndexList.indexOf(i) === -1 ? n : 99999999
-  );
+  const allowed = array.map((n, i) => {
+    const arrayToNumber = parseInt(n.join(""), 10);
+    return ignoreIndexList.indexOf(i) === -1 ? arrayToNumber : 99999999;
+  });
   const minNumber = Math.min(...allowed);
   return allowed.indexOf(minNumber);
 };
@@ -94,33 +86,25 @@ const inArray = (number: number, array: number[]): boolean => {
  * @example array = [15,12,35] & n = 1 returns [5,2,35]
  */
 export const removeNumberOccurrence = (
-  possibilities: number[],
+  possibilities: number[][],
   numberToRemove: number,
   ignoreIndices: number[]
-): number[] => {
+): number[][] => {
   const newArray = possibilities.map((n, i) => {
     // if the index of the possibility is present in the ignoreIndices
     // return it without any processing
-    if (inArray(i, ignoreIndices)) return n;
-
-    const numberString = n.toString().split("");
+    if (inArray(i, ignoreIndices)) return [];
     // get the index of the number to remove
-    const numberIndex = numberString.indexOf(numberToRemove.toString());
-    // if the number does no contain the numberToRemove, return it
+    const numberIndex = n.indexOf(numberToRemove);
+    // if the number does no contain the numberToRemove, return it as is
     if (numberIndex === -1) return n;
     // else remove number from the array
-    numberString.splice(numberIndex, 1);
-    const removeNumber = numberString.sort().join("");
-    const parsedNumber = parseInt(removeNumber, 10);
+    n.splice(numberIndex, 1);
     // if the number isNaN, give back a number that will never be considered as the smallest
     //
-    return isNaN(parsedNumber) ? 0 : parsedNumber;
+    return n;
   });
   return newArray;
-};
-
-export const arrayHasDuplicates = (array: number[]): boolean => {
-  return array.length !== new Set(array).size;
 };
 
 /**
@@ -159,23 +143,6 @@ export const generateSafeNumberFromPossibilities = (
   return validNumber;
 };
 
-//
-/**
- * Returns the possibilities which index is not in the indexToIgnore list
- * @param possibilities the possibilities array
- * @param indexToIgnore the ignore index list
- * @example  possibilities = [1,2,3,4,5,6,7] - indexToIgnore [0,5,3,4] = returns [2,3,7]
- */
-export const getUnprocessedPossibilities = (
-  possibilities: number[],
-  indexToIgnore: number[]
-) => {
-  const r = possibilities.filter((_, i) => {
-    return indexToIgnore.indexOf(i) === -1;
-  });
-  return r;
-};
-
 export const convertObjectKeysToNumbers = (keys: string[]): number[] => {
   return keys.map((n) => parseInt(n));
 };
@@ -201,19 +168,16 @@ export const doesGridContainZero = (
  * @returns the count of the number in all the non-ignored possibilities
  */
 const countNumberInPossibilities = (
-  n: string,
-  possibilities: number[],
+  n: number,
+  possibilities: number[][],
   ignoreListIndices: number[]
 ) => {
   let occurrence = 0;
   possibilities.forEach((possibility, i) => {
     // only process this possibility if it is not in the ignoreListIndices
     if (ignoreListIndices.indexOf(i) === -1) {
-      // get all the number in the current possibility by converting it to a string
-      // which can be handled an an array
-      const numbersInCurrentPossibility = possibility.toString();
       // count how many times the number occurs in it
-      if (numbersInCurrentPossibility.indexOf(n) > -1) {
+      if (possibility.indexOf(n) > -1) {
         occurrence++;
       }
     }
@@ -247,41 +211,44 @@ const getSmallestNumberFromObject = (o: { [key: string]: number }): number => {
  * @returns
  */
 const possibilitiesContainSameNumbers = (
-  possibilities: number[],
+  possibilities: number[][],
   ignoreIndices: number[]
 ): boolean => {
   const filteredPossibilities = possibilities.filter(
     (_, i) => ignoreIndices.indexOf(i) === -1
   );
+  // if any number is different than the first one, exit the function
   const checkAgainst = filteredPossibilities[0];
-  return filteredPossibilities.every((n) => n === checkAgainst);
+  return filteredPossibilities.every(
+    (n) => n.toString() === checkAgainst.toString()
+  );
 };
 /**
- * Returns the number that is less present in the possibilities array
- * @param numbers the numbers that each number within is checked for its least count
- * @param possibilities the possibilities list
+ * Returns the number that occurs the least in the possibilities array
+ * @param cellPossibilities the numbers that each number within is checked for its least count
+ * @param rowPossibilities the possibilities list
  * @param ignoreIndices the index of the possibilities to be ignored by the function
  * @returns the number within the **numbers** param which count occurs the least in the possibilities
  */
 export const getLeastOccurredNumberCount = (
-  numbers: number,
-  possibilities: number[],
+  cellPossibilities: number[],
+  rowPossibilities: number[][],
   ignoreIndices: number[]
 ): number => {
-  if (numbers < 10) {
-    return numbers;
+  if (cellPossibilities.length === 1) {
+    return cellPossibilities[0];
   } else {
     const counter: { [key: string]: number } = {};
-    const number = numbers.toString();
-    // if the possibilities contain the same number, return a random number among the numbers contained in the _numbers_ param
-    if (possibilitiesContainSameNumbers(possibilities, ignoreIndices)) {
-      return parseInt(number[randomNumber(0, number.length - 1)], 10);
+    const number = cellPossibilities;
+    // if the possibilities contain the same number, return a random number among the numbers contained in the cellPossibilities param
+    if (possibilitiesContainSameNumbers(rowPossibilities, ignoreIndices)) {
+      return cellPossibilities[randomNumber(0, number.length - 1)];
     } else {
-      for (let i = 0; i < number.length; i++) {
-        const numberSegment = number[i];
+      for (let i = 0; i < cellPossibilities.length; i++) {
+        const numberSegment = cellPossibilities[i];
         const numCount = countNumberInPossibilities(
-          number[i],
-          possibilities,
+          cellPossibilities[i],
+          rowPossibilities,
           ignoreIndices
         );
         counter[numberSegment] = numCount;
@@ -292,20 +259,31 @@ export const getLeastOccurredNumberCount = (
   }
 };
 
-export const hasNaN = (array: number[]) => {
-  return array.includes(NaN);
+/**
+ * checks if the 2d array contains any empty array in it
+ * @param array 2d array of numbers
+ * @returns
+ */
+export const hasEmptyArray = (array: number[][]) => {
+  return array.some((a) => a.length === 0);
 };
-
-export const rowContainsZero = (array: number[]) => array.indexOf(0) !== -1;
 
 /**
  * Picks one of the numbers of n randomly
  * @param n the number to pick from
  * @returns a random number that is part of n
  */
-export const pickFromNumber = (n: number): number => {
-  if (n < 10) return n;
-  const numberStr = n.toString();
+export const pickFromNumber = (n: number[]): number => {
+  if (n.length === 1) return n[0];
 
-  return parseInt(numberStr[randomNumber(0, numberStr.length - 1)]);
+  return n[randomNumber(0, n.length - 1)];
+};
+
+/**
+ * Clones a 2d array
+ * @param array the array to clone
+ * @returns a new copy of the provided 2d array
+ */
+export const cloneArray = (array: number[][]): number[][] => {
+  return array.map((a) => a.slice());
 };

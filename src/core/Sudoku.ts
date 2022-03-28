@@ -6,10 +6,9 @@ import {
   removeNumberOccurrence,
   convertObjectKeysToNumbers,
   getLeastOccurredNumberCount,
-  hasNaN,
   pickFromNumber,
-  rowContainsZero,
   randomNumber,
+  cloneArray,
 } from "./../utils/utils";
 
 interface CellCoordinates {
@@ -114,21 +113,30 @@ export class Sudoku {
    * @param row the row index
    * @returns
    */
-  private _getRowPossibilitiesInEachCell(row: number): number[] {
+  private _getRowPossibilitiesInEachCell(row: number): number[][] {
     // first row is randomly generated, no need to computed its cell possible solutions
     if (row === 0) throw new Error("Row cannot be 0");
-    const rowCellsSolution: number[] = [];
+    const rowCellsSolution: number[][] = [];
     for (let col = 0; col < 9; col++) {
       const cellPossibleSolution = this._getAllowedInCell({ row, col });
-      rowCellsSolution.push(parseInt(cellPossibleSolution.join(""), 10));
+      rowCellsSolution.push(cellPossibleSolution.sort((a, b) => a - b));
     }
     // each number represent the possible numbers that can go in that cell
     return rowCellsSolution;
   }
 
-  private _generateValidRow(rowCellsPossibleSolutions: number[]): number[] {
-    const immutablePossibilities = [...rowCellsPossibleSolutions];
-    let possibilities: number[] = [...rowCellsPossibleSolutions];
+  /**
+   * Geneartes a row of number according the rules taking into account the possiblities that go in each cell of the row.
+   *
+   * If the method reaches an impass i.e. When it cannot generate unique numbers anymore, it returns -1 rather than an array of numbers.
+   * @param rowCellsPossibleSolutions a 2d array containing all the possiblities in each cell
+   * @returns an array of number or -1 in case of an inability to generate a valid row
+   */
+  private _generateValidRow(
+    rowCellsPossibleSolutions: number[][]
+  ): number[] | number {
+    const immutablePossibilities = cloneArray(rowCellsPossibleSolutions);
+    let possibilities: number[][] = cloneArray(rowCellsPossibleSolutions);
     const generatedValidRow: { [cachedIndex: string]: number } = {};
 
     for (let i = 0; i < immutablePossibilities.length; i++) {
@@ -140,13 +148,15 @@ export class Sudoku {
         possibilities,
         ignoreIndexList
       );
-      // transform it to a string so that it can be manipulated
+      // if an impass is reached, exit the function and let the loop rollback
+      if (minNumberIndex === -1) return -1;
+
       const minNumber = possibilities[minNumberIndex];
       // const minNumberStr = minNumber.toString();
 
       let validCellNumber: number;
       // first three cells are chosen randomly
-      // this gives the the function the ability to alter the generated numbers in case of a rollback
+      // this gives the function the ability to alter the generated numbers in case of a rollback
       if (i <= 2) {
         validCellNumber = pickFromNumber(minNumber);
       } else {
@@ -163,6 +173,7 @@ export class Sudoku {
       ignoreIndexList.push(minNumberIndex);
 
       // remove the generated number from all the cells, to prevent it from getting picked up again
+
       possibilities = removeNumberOccurrence(
         possibilities,
         validCellNumber,
@@ -183,38 +194,29 @@ export class Sudoku {
     for (let row = 0; row < 9; row++) {
       if (row === 0) {
         // create the first row which is a randomly shuffled array of number
-        // this will serve as the base of the next generations
+        // this will serve as the base for the next generation process
         const randomlyGeneratedRow = this._generateRandomRow();
         this._grid[row] = randomlyGeneratedRow;
       } else {
         this._grid[row] = [];
 
         const rowPossibleInEachCell = this._getRowPossibilitiesInEachCell(row);
-        const rowPossibilitiesContainNan = hasNaN(rowPossibleInEachCell);
-        // if the row possibilities contain a nan this means that the grid cannot produce a valid row based on the possibilities
-        // therefore we need to rollback to the previous row and regenerate a new one
-        if (rowPossibilitiesContainNan) {
-          // the row at index 1 can never have a NaN therefore, we can safely assume that the rolled back row
-          // is never the first one (index 0, which needs a randomly generated row rather than based on possibilities)
+        // const rowPossibilitiesContainNan = hasEmptyArray(rowPossibleInEachCell);
+        const generatedRow = this._generateValidRow(rowPossibleInEachCell);
+
+        // when the _generateValidRow method cannot generate a valid number for a cell
+        // it exits the with a number (-1) rather than an array of number when it complete successfully,
+
+        // therefore we need to rollback to the previous row and regenerate a new one when the methods return a number
+        if (typeof generatedRow === "number") {
           // Reset the previous row
 
           // remove both the current empty and the previously generated row (so that it gets regenerated again)
           // before rolling back
           this._grid.splice(row - 1, 2);
-          // rollback 2 row back so that when the continue state runs, the previous row will be regenerated
+          // rollback 2 rows back so that when the continue statement runs, the previous row will be regenerated
           row -= 2;
           // once we rollback, reiterate
-          continue;
-        }
-
-        const generatedRow = this._generateValidRow(rowPossibleInEachCell);
-
-        // if the generated row contains a zero, roll back to generate new number for the previous row
-        // given therefore new possibilities
-        if (rowContainsZero(generatedRow)) {
-          // this rolls back similarly to when the possibilities contain NaN (read above for more)
-          this._grid.splice(row, 1);
-          row -= 1;
           continue;
         }
 
