@@ -1,6 +1,5 @@
 node_modules
 emulate-grid.bat
 open-external-terminal.bat
-Sudoku.debug.ts
-
+**/*.debug.ts
 build/
