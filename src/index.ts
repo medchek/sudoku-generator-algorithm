@@ -1,2 +1,2 @@
-// import { Sudoku } from "./core/Sudoku";
-export { Sudoku } from "./core/Sudoku";
+import { Sudoku } from "./core/Sudoku";
+module.exports = Sudoku;
