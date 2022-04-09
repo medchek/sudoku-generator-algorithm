@@ -15,13 +15,7 @@ test("removeNumberOccurrence should return the array without the number to be re
     [1, 2, 3],
   ];
   const result = removeNumberOccurrence(array, 1, [3]);
-
-  expect(result).toStrictEqual([
-    [5, 4],
-    [5, 7, 9],
-    [3, 6, 8],
-    [1, 2, 3],
-  ]);
+  expect(result).toStrictEqual([[5, 4], [5, 7, 9], [3, 6, 8], []]);
 });
 
 test("generateSafeNumberFromPossibilities should return a number that does not occur in the possibilities", () => {

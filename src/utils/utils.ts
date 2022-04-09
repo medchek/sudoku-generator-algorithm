@@ -119,9 +119,6 @@ export const generateSafeNumberFromPossibilities = (
   targetNumber: string,
   possibilities: number[]
 ): number => {
-  // console.log(generateSafeNumberFromPossibilities);
-  // console.log("number =>", targetNumber);
-  // console.log("possibilities =>", possibilities);
   const initialNumber = targetNumber[randomNumber(0, targetNumber.length - 1)];
 
   let validNumber = parseInt(initialNumber, 10);
